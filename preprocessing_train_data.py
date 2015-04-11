@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #coding=utf=8
 '''
     1，增加周一周二这样的显示；
@@ -12,6 +13,10 @@ def main():
         filename = sys.argv[1]
         lines = open(filename, 'r').readlines()
         wlines = []
+        if 'user_id' in lines[0]:
+            #如果第一行是注释说明，添加一个weekday的标识
+            #wlines.append(lines[0].strip().split(',').append('weekday'))
+            del lines[0]
         for l in lines:
             parts = l.strip().split(',')
             r_date = datetime.strptime(parts[-1], "%Y-%m-%d %H")
