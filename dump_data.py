@@ -14,7 +14,7 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                         user_geo CHAR(50) DEFAULT "",
                         item_category INTEGER,
                         behavior_time TEXT DEFAULT "",
-                        behavior_hour INTEGER -- 记录用户行为的hour，作为特征的一种
+                        behavior_weekday INTEGER -- 记录用户行为的weekday信息，作为特征的一种
                         );
                      ''',
                      '''
@@ -27,13 +27,13 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                      ''',
                      ]
 CREATE_INDEX_SQLS = [
-                  #'CREATE INDEX uid on user_behaviors (user_id);',
-                  #'CREATE INDEX iid on user_behaviors (item_id);',
-                  #'CREATE INDEX cat on user_behaviors (item_category);',
+                  'CREATE INDEX uid on user_behaviors (user_id);',
+                  'CREATE INDEX iid on user_behaviors (item_id);',
+                  'CREATE INDEX cat on user_behaviors (item_category);',
                   'CREATE INDEX bt on user_behaviors (behavior_type);',
-                  'CREATE INDEX bh on user_behaviors (behavior_hour);',
-                  #'CREATE INDEX iid2 on items (item_id);',
-                  #'CREATE INDEX cat2 on user_behaviors (item_category);',
+                  'CREATE INDEX bw on user_behaviors (behavior_weekday);',
+                  'CREATE INDEX iid2 on items (item_id);',
+                  'CREATE INDEX cat2 on user_behaviors (item_category);',
                 ]
 
 
@@ -54,13 +54,13 @@ def create_table():
 def dump_users_data():
     '''
         从预处理后的文件中文件中导入训练数据，
-        用户点击中增加column hour，作为一个特征进行分析
+        用户点击中增加column weekday，作为一个特征进行分析
     '''
     lines = open(pre_users_his_path).readlines()
     conn = sqlite3.connect(database_name)
     cur = conn.cursor()
     sql = '''
-            INSERT INTO user_behaviors (user_id, item_id, behavior_type, user_geo, item_category, behavior_time, behavior_hour) values (?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO user_behaviors (user_id, item_id, behavior_type, user_geo, item_category, behavior_time, behavior_weekday) values (?, ?, ?, ?, ?, ?, ?);
           '''
     values = [l.strip().split(',') for l in lines]
     cur.executemany(sql, values)
@@ -98,6 +98,7 @@ def main():
         elif type_ == 0:
             create_table()
             dump_users_data()
+            dump_items_data()
 
 
 if __name__ == '__main__':
