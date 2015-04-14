@@ -37,3 +37,14 @@ class RECDAL(object):
         sql = 'select distinct(user_id) from user_behaviors where item_id in %s and behavior_type in %s' % (hot_items, beh_types)
         self.cursor.execute(sql)
         return [r[0] for r in self.cursor.fetchall()]
+
+    def get_records_by_date(self, date_str, beh_type=4):
+        '''
+            传入指定日期的date_str,eg. "2014-12-18", 以及动作type
+            返回对应的购买记录
+        '''
+        sql = 'select user_id, item_id from user_behaviors where behavior_time like "%s%%" and behavior_type = %s' % (date_str, beh_type)
+        self.cursor.execute(sql)
+        return self.cursor.fetchall()
+
+
