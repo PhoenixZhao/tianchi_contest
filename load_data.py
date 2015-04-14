@@ -27,13 +27,14 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                      ''',
                      ]
 CREATE_INDEX_SQLS = [
-                  'CREATE INDEX uid on user_behaviors (user_id);',
-                  'CREATE INDEX iid on user_behaviors (item_id);',
-                  'CREATE INDEX cat on user_behaviors (item_category);',
-                  'CREATE INDEX bt on user_behaviors (behavior_type);',
-                  'CREATE INDEX bw on user_behaviors (behavior_weekday);',
-                  'CREATE INDEX iid2 on items (item_id);',
-                  'CREATE INDEX cat2 on user_behaviors (item_category);',
+                  #'CREATE INDEX uid on user_behaviors (user_id);',
+                  #'CREATE INDEX iid on user_behaviors (item_id);',
+                  #'CREATE INDEX cat on user_behaviors (item_category);',
+                  'CREATE INDEX bti on user_behaviors (behavior_time);',
+                  #'CREATE INDEX bt on user_behaviors (behavior_type);',
+                  #'CREATE INDEX bw on user_behaviors (behavior_weekday);',
+                  #'CREATE INDEX iid2 on items (item_id);',
+                  #'CREATE INDEX cat2 on user_behaviors (item_category);',
                 ]
 
 
@@ -51,7 +52,7 @@ def create_table():
         conn.commit()
     print 'creating indexes finished!'
 
-def dump_users_data():
+def load_users_data():
     '''
         从预处理后的文件中文件中导入训练数据，
         用户点击中增加column weekday，作为一个特征进行分析
@@ -67,7 +68,7 @@ def dump_users_data():
     conn.commit()
     print 'insert %s user records' % len(lines)
 
-def dump_items_data():
+def load_items_data():
     '''
         直接将csv中的数据导入数据库
     '''
@@ -85,20 +86,20 @@ def dump_items_data():
 
 def main():
     if len(sys.argv) < 2:
-        print 'please specify your dumping type\n0: all \n1: create table only) \n2: dump users data \n3: dump items data'
+        print 'please specify your loading type\n0: all \n1: create table only) \n2: load users data \n3: load items data'
         sys.exit(0)
     else:
         type_ = int(sys.argv[1])
         if type_ == 1:
             create_table()
         elif type_ == 2:
-            dump_users_data()
+            load_users_data()
         elif type_ == 3:
-            dump_items_data()
+            load_items_data()
         elif type_ == 0:
             create_table()
-            dump_users_data()
-            dump_items_data()
+            load_users_data()
+            load_items_data()
 
 
 if __name__ == '__main__':
