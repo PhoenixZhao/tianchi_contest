@@ -20,3 +20,20 @@ class RECDAL(object):
         sql = 'select distinct(user_id) from user_behaviors'
         self.cursor.execute(sql)
         return [r[0] for r in self.cursor.fetchall()]
+
+    def get_records_by_time(self, from_str, to_str):
+        '''
+            给定from_str和to_str，返回全部记录数
+            前闭后开区间
+        '''
+        sql = 'select user_id, item_id from user_behaviors where behavior_time >= ? and behavior_time < ?'
+        self.cursor.execute(sql, (from_str, to_str))
+        return self.cursor.fetchall()
+
+    def get_users_by_items(self, hot_items, beh_types):
+        '''
+            从给定的items和beh_types中筛选出所有的unique users
+        '''
+        sql = 'select distinct(user_id) from user_behaviors where item_id in %s and behavior_type in %s' % (hot_items, beh_types)
+        self.cursor.execute(sql)
+        return [r[0] for r in self.cursor.fetchall()]

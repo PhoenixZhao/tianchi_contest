@@ -9,3 +9,5 @@ sample_data_path = '../data/sample_data/'
 raw_data_path = '../data/tianchi_mobile_recommend_train_user.csv'
 pre_users_his_path = '../data/tianchi_mobile_recommend_train_user.csv.pre'
 items_info_path = '../data/tianchi_mobile_recommend_train_item.csv'
+
+submission_dir = '../data/submission_res/'
