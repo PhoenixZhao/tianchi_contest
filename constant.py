@@ -15,3 +15,6 @@ test_dir = '../data/test_data/'
 
 features_log_file = '../log/features.log'
 features_output_path = '../data/train_data/features.txt'
+
+POS = 1
+NEG = 0
