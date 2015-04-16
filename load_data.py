@@ -39,7 +39,17 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                          l3d_carts INTEGER NOT NULL DEFAULT 0, --number of adding cartin last 3 days before spliting day, type=3
                          l3d_buys INTEGER NOT NULL DEFAULT 0, --number of buyingin last 3 days before spliting day, type=4
                          l3d_total INTEGER NOT NULL DEFAULT 0, --number of all the four typesin last 3 days before spliting day, type=4
-                         lc_date_delta, INTEGER NOT NULL DEFAULT 0 --last click(all types) before split date
+                         lc_date_delta INTEGER NOT NULL DEFAULT 0 --last click(all types) before split date
+                         );
+                     ''',
+                     '''
+                        /*
+                            the records in split date, which can be used to generate trainnig data
+                        */
+                         CREATE TABLE if not exists split_20141218_labels(
+                         id INTEGER PRIMARY KEY ASC autoincrement,
+                         ui_id INTEGER KEY NOT NULL,
+                         label INTEGER NOT NULL
                          );
                      ''',
                      ]
