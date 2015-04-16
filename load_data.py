@@ -30,7 +30,8 @@ CREATE_INDEX_SQLS = [
                   #'CREATE INDEX uid on user_behaviors (user_id);',
                   #'CREATE INDEX iid on user_behaviors (item_id);',
                   #'CREATE INDEX cat on user_behaviors (item_category);',
-                  'CREATE INDEX bti on user_behaviors (behavior_time);',
+                  #'CREATE INDEX bti on user_behaviors (behavior_time);',
+                  'CREATE INDEX uii on user_behaviors (user_id, item_id);',
                   #'CREATE INDEX bt on user_behaviors (behavior_type);',
                   #'CREATE INDEX bw on user_behaviors (behavior_weekday);',
                   #'CREATE INDEX iid2 on items (item_id);',
@@ -47,9 +48,17 @@ def create_table():
         cur.execute(sql)
         conn.commit()
     print 'creating table finished!'
+
+def add_indexes():
+    '''
+        给数据库增加索引
+    '''
+    conn = sqlite3.connect(database_name)
+    cur = conn.cursor()
     for sql in CREATE_INDEX_SQLS:
         cur.execute(sql)
         conn.commit()
+        print 'add index, sql=%s' % sql
     print 'creating indexes finished!'
 
 def load_users_data():
@@ -86,7 +95,7 @@ def load_items_data():
 
 def main():
     if len(sys.argv) < 2:
-        print 'please specify your loading type\n0: all \n1: create table only) \n2: load users data \n3: load items data'
+        print 'please specify your loading type\n0: all \n1: create table only) \n2: load users data \n3: add indexes\n4load items data'
         sys.exit(0)
     else:
         type_ = int(sys.argv[1])
@@ -94,6 +103,8 @@ def main():
             create_table()
         elif type_ == 2:
             load_users_data()
+        elif type_ == 3:
+            add_indexes()
         elif type_ == 3:
             load_items_data()
         elif type_ == 0:
