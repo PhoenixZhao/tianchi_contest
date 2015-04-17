@@ -59,3 +59,9 @@ class RECDAL(object):
         self.cursor.executemany(sql, records)
         self.conn.commit()
 
+    def get_records_by_sql(self, sql):
+        '''
+            传入sql，返回数据
+        '''
+        self.cursor.execute(sql)
+        return self.cursor.fetchall()
