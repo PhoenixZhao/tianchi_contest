@@ -26,9 +26,10 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                          );
                      ''',
                      '''
-                         CREATE TABLE if not exists split_20141218_states(
+                         CREATE TABLE if not exists split_20141218_stats(
                          id INTEGER PRIMARY KEY ASC autoincrement,
-                         ui_id INTEGER KEY NOT NULL, --user_id-item_id
+                         user_id INTEGER key NOT NULL,
+                         item_id INTEGER key NOT NULL,
                          looks INTEGER NOT NULL DEFAULT 0, --number of look, type=1
                          stores INTEGER NOT NULL DEFAULT 0, --number of store, type=2
                          carts INTEGER NOT NULL DEFAULT 0, --number of adding cart, type=3
@@ -48,8 +49,27 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                         */
                          CREATE TABLE if not exists split_20141218_labels(
                          id INTEGER PRIMARY KEY ASC autoincrement,
-                         ui_id INTEGER KEY NOT NULL,
+                         user_id INTEGER key NOT NULL,
+                         item_id INTEGER key NOT NULL,
                          label INTEGER NOT NULL
+                         );
+                     ''',
+                     '''
+                         CREATE TABLE if not exists split_20141219_stats(
+                         id INTEGER PRIMARY KEY ASC autoincrement,
+                         user_id INTEGER key NOT NULL,
+                         item_id INTEGER key NOT NULL,
+                         looks INTEGER NOT NULL DEFAULT 0, --number of look, type=1
+                         stores INTEGER NOT NULL DEFAULT 0, --number of store, type=2
+                         carts INTEGER NOT NULL DEFAULT 0, --number of adding cart, type=3
+                         buys INTEGER NOT NULL DEFAULT 0, --number of buying, type=4
+                         total INTEGER NOT NULL DEFAULT 0, --number of all the four types, type=4
+                         l3d_looks INTEGER NOT NULL DEFAULT 0, --number of lookin last 3 days before spliting day, type=1
+                         l3d_stores INTEGER NOT NULL DEFAULT 0, --number of storein last 3 days before spliting day, type=2
+                         l3d_carts INTEGER NOT NULL DEFAULT 0, --number of adding cartin last 3 days before spliting day, type=3
+                         l3d_buys INTEGER NOT NULL DEFAULT 0, --number of buyingin last 3 days before spliting day, type=4
+                         l3d_total INTEGER NOT NULL DEFAULT 0, --number of all the four typesin last 3 days before spliting day, type=4
+                         lc_date_delta INTEGER NOT NULL DEFAULT 0 --last click(all types) before split date
                          );
                      ''',
                      ]
@@ -58,11 +78,20 @@ CREATE_INDEX_SQLS = [
                   #'CREATE INDEX iid on user_behaviors (item_id);',
                   #'CREATE INDEX cat on user_behaviors (item_category);',
                   #'CREATE INDEX bti on user_behaviors (behavior_time);',
-                  'CREATE INDEX uii on user_behaviors (user_id, item_id);',
+                  #'CREATE INDEX uii on user_behaviors (user_id, item_id);',
                   #'CREATE INDEX bt on user_behaviors (behavior_type);',
                   #'CREATE INDEX bw on user_behaviors (behavior_weekday);',
                   #'CREATE INDEX iid2 on items (item_id);',
                   #'CREATE INDEX cat2 on user_behaviors (item_category);',
+                  #'CREATE INDEX uii3 on split_20141218_labels (user_id, item_id);',
+                  #'CREATE INDEX uii4 on split_20141218_stats (user_id, item_id);',
+                  #'CREATE INDEX uid3 on split_20141218_labels(user_id);',
+                  #'CREATE INDEX iid3 on split_20141218_labels(item_id);',
+                  #'CREATE INDEX uid4 on split_20141218_stats(user_id);',
+                  #'CREATE INDEX iid4 on split_20141218_stats(item_id);',
+                  'CREATE INDEX uii5 on split_20141219_stats (user_id, item_id);',
+                  'CREATE INDEX uid5 on split_20141219_stats(user_id);',
+                  'CREATE INDEX iid5 on split_20141219_stats(item_id);',
                 ]
 
 
