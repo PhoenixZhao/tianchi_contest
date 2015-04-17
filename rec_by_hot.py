@@ -44,13 +44,20 @@ def rec_by_hot_items():
         2015-04-14-exp1:
             1, 只要历史中有过收藏或者加购物车行为的用户，全部算candidate用户
             2, 每个用户都推荐topK，并未对每个用户只预测它加入购物车的item
+        2015-04-14-exp2:
+            1, 只要历史中有过收藏或者加购物车行为的用户，全部算candidate用户
+            2, 对每个用户只推荐它加入购物车的item,即需要过滤一下product生成的items
+        2015-04-14-exp3:
+            1，给每个用户推荐过去7天它加入收藏或者购物车但还未购买的item
     '''
-    predicted_day = datetime.strptime('2014-12-19 0', "%Y-%m-%d %H")
-    topK = 30
+    date_str = '2014-12-12'
+    predicted_day = datetime.strptime(date_str, "%Y-%m-%d")
+    topK = 20
+    delta_days = 4
     beh_types = (2,3)
     filename = '2015-04-14-exp1.csv'
-    print 'expriments infor:\ntopK=%s\nbeh_types=%s' % (topK, beh_types)
-    hot_items = get_recent_hot_items(predicted_day, topK=topK)
+    print 'expriments infor:\npredicted_date=%s\ntopK=%s\nbeh_types=%s' % (date_str, topK, beh_types)
+    hot_items = get_recent_hot_items(predicted_day, delta_days=delta_days, topK=topK)
     users = get_candidate_users_from_hot_items(tuple(hot_items), beh_types)
     user_items = [r for r in product(users, hot_items)]
     print 'rec by hot items, %s candidate_users, %s hot items' % (len(users), len(hot_items))
