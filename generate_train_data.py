@@ -13,11 +13,10 @@ from constant import POS, NEG
 dal = RECDAL()
 
 def save_samples(samples):
-    samples = [(ind + 1, r, label) for ind, (r, label) in enumerate(samples)]
+    samples = [(ind + 1, user_id, item_id, label) for ind, (user_id, item_id, label) in enumerate(samples)]
     table_name = 'split_20141218_labels'
     dal.insert_records(table_name, samples)
     print 'insert %s records' %(len(samples))
-
 
 def generate_train_data(split_date_str):
     '''
@@ -38,8 +37,12 @@ def generate_train_data(split_date_str):
             neg_samples.add(ui_id)
     samples = []
     samples = [(r, POS) for r in pos_samples] + [(r, NEG) for r in neg_samples]
+    samples2 = []
+    for r, label in samples:
+        user_id, item_id = r.split('-')
+        samples2.append((int(user_id), int(item_id), label))
     print 'samples: pos=%s, neg=%s' % (len(pos_samples), len(neg_samples))
-    save_samples(samples)
+    save_samples(samples2)
 
 if __name__ == '__main__':
     split_date_str = '2014-12-18'
