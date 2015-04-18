@@ -16,7 +16,9 @@ test_dir = '../data/test_data/'
 features_log_file = '../log/features.log'
 features_output_path = '../data/train_data/features.txt'
 
-LR_pred_output_path = '../data/submission_res/lr_pred.cvs'
+LR_online_pred_output_path = '../data/submission_res/lr_pred.cvs'
+LR_offline_pred_output_path = '../data/offline_res/lr_pred.cvs'
+LR_log_file = '../log/model.log'
 
 POS = 1
 NEG = 0
