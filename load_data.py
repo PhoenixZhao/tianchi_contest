@@ -24,6 +24,25 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                          user_geo CHAR(50) DEFAULT "",
                          item_category INTEGER
                          );
+
+                     ''',
+                     '''
+                         CREATE TABLE if not exists split_20141217_stats(
+                         id INTEGER PRIMARY KEY ASC autoincrement,
+                         user_id INTEGER key NOT NULL,
+                         item_id INTEGER key NOT NULL,
+                         looks INTEGER NOT NULL DEFAULT 0, --number of look, type=1
+                         stores INTEGER NOT NULL DEFAULT 0, --number of store, type=2
+                         carts INTEGER NOT NULL DEFAULT 0, --number of adding cart, type=3
+                         buys INTEGER NOT NULL DEFAULT 0, --number of buying, type=4
+                         total INTEGER NOT NULL DEFAULT 0, --number of all the four types, type=4
+                         l3d_looks INTEGER NOT NULL DEFAULT 0, --number of lookin last 3 days before spliting day, type=1
+                         l3d_stores INTEGER NOT NULL DEFAULT 0, --number of storein last 3 days before spliting day, type=2
+                         l3d_carts INTEGER NOT NULL DEFAULT 0, --number of adding cartin last 3 days before spliting day, type=3
+                         l3d_buys INTEGER NOT NULL DEFAULT 0, --number of buyingin last 3 days before spliting day, type=4
+                         l3d_total INTEGER NOT NULL DEFAULT 0, --number of all the four typesin last 3 days before spliting day, type=4
+                         lc_date_delta INTEGER NOT NULL DEFAULT 0 --last click(all types) before split date
+                         );
                      ''',
                      '''
                          CREATE TABLE if not exists split_20141218_stats(
@@ -47,6 +66,17 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                         /*
                             the records in split date, which can be used to generate trainnig data
                         */
+                         CREATE TABLE if not exists split_20141217_labels(
+                         id INTEGER PRIMARY KEY ASC autoincrement,
+                         user_id INTEGER key NOT NULL,
+                         item_id INTEGER key NOT NULL,
+                         label INTEGER NOT NULL
+                         );
+                     ''',
+                     '''
+                        /*
+                            the records in split date, which can be used to generate trainnig data
+                        */
                          CREATE TABLE if not exists split_20141218_labels(
                          id INTEGER PRIMARY KEY ASC autoincrement,
                          user_id INTEGER key NOT NULL,
@@ -64,12 +94,12 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                          carts INTEGER NOT NULL DEFAULT 0, --number of adding cart, type=3
                          buys INTEGER NOT NULL DEFAULT 0, --number of buying, type=4
                          total INTEGER NOT NULL DEFAULT 0, --number of all the four types, type=4
-                         l3d_looks INTEGER NOT NULL DEFAULT 0, --number of lookin last 3 days before spliting day, type=1
-                         l3d_stores INTEGER NOT NULL DEFAULT 0, --number of storein last 3 days before spliting day, type=2
+                         l3d_looks INTEGER NOT NULL DEFAULT 0, --number of look last 3 days before spliting day, type=1
+                         l3d_stores INTEGER NOT NULL DEFAULT 0, --number of store last 3 days before spliting day, type=2
                          l3d_carts INTEGER NOT NULL DEFAULT 0, --number of adding cartin last 3 days before spliting day, type=3
-                         l3d_buys INTEGER NOT NULL DEFAULT 0, --number of buyingin last 3 days before spliting day, type=4
-                         l3d_total INTEGER NOT NULL DEFAULT 0, --number of all the four typesin last 3 days before spliting day, type=4
-                         lc_date_delta INTEGER NOT NULL DEFAULT 0 --last click(all types) before split date
+                         l3d_buys INTEGER NOT NULL DEFAULT 0, --number of buying last 3 days before spliting day, type=4
+                         l3d_total INTEGER NOT NULL DEFAULT 0, --number of all the four types last 3 days before spliting day, type=4
+                         lc_date_delta INTEGER NOT NULL DEFAULT 0 --lastest click(all types) before split date
                          );
                      ''',
                      ]
@@ -84,14 +114,20 @@ CREATE_INDEX_SQLS = [
                   #'CREATE INDEX iid2 on items (item_id);',
                   #'CREATE INDEX cat2 on user_behaviors (item_category);',
                   #'CREATE INDEX uii3 on split_20141218_labels (user_id, item_id);',
-                  #'CREATE INDEX uii4 on split_20141218_stats (user_id, item_id);',
                   #'CREATE INDEX uid3 on split_20141218_labels(user_id);',
                   #'CREATE INDEX iid3 on split_20141218_labels(item_id);',
+                  #'CREATE INDEX uii4 on split_20141218_stats (user_id, item_id);',
                   #'CREATE INDEX uid4 on split_20141218_stats(user_id);',
                   #'CREATE INDEX iid4 on split_20141218_stats(item_id);',
                   'CREATE INDEX uii5 on split_20141219_stats (user_id, item_id);',
                   'CREATE INDEX uid5 on split_20141219_stats(user_id);',
                   'CREATE INDEX iid5 on split_20141219_stats(item_id);',
+                  'CREATE INDEX uii6 on split_20141217_stats (user_id, item_id);',
+                  'CREATE INDEX uid6 on split_20141217_stats(user_id);',
+                  'CREATE INDEX iid6 on split_20141217_stats(item_id);',
+                  'CREATE INDEX uii7 on split_20141217_labels (user_id, item_id);',
+                  'CREATE INDEX uid7 on split_20141217_labels(user_id);',
+                  'CREATE INDEX iid7 on split_20141217_labels(item_id);',
                 ]
 
 
