@@ -33,13 +33,11 @@ train_neg_sql = '''
                 where l.label = 0
           '''
 
-filter_sql = ' where s.lc_date_delta < 10'
-filter_sql = ' where s.buys = 0'
+#filter_sql = ' where s.buys = 0'#初步验证这个参数不是很重要
 #验证集的待预测候选集
 validation_candidate_sql = '''
             select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta
             from split_20141218_stats as s'''
-validation_candidate_sql += filter_sql
 #ground truth
 validation_truth_sql = '''
            select user_id, item_id from split_20141218_labels where label = 1;
@@ -47,13 +45,12 @@ validation_truth_sql = '''
 test_candidate_sql = '''
             select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta
             from split_20141219_stats as s'''
-test_candidate_sql += filter_sql
 #在过去一个月的有过购买的暂时先不考虑作为预测集
 on_filter_sql = '''
             select distinct user_id, item_id from user_behaviors where behavior_type = 4;
              '''
-exp_sqls = [train_pos_sql, train_neg_sql, validation_candidate_sql, validation_truth_sql, test_candidate_sql]
-exp_sqls_info = ['train_pos_sql', 'train_neg_sql', 'validation_candidate_sql', 'validation_truth_sql', 'test_candidate_sql']
+exp_sqls = []
+exp_sqls_info = []
 
 class Model(object):
 
@@ -128,9 +125,9 @@ class Model(object):
         self.vali_rec_res = [(int(uid), int(item_id)) for uid, item_id, _ in rec_res]
         logging.info('[Validation]filter by prob=%s, get %s predicted buying items', self.th_prob, len(self.vali_rec_res))
 
-        self.evaluate()
 
         self.save_res(self.vali_output_path, self.vali_rec_res)
+        return self.evaluate()
 
     def train(self):
         self.LR.fit(self.train_X, self.train_Y)
@@ -170,14 +167,37 @@ class Model(object):
         F = 2.0 / (1.0 / precision + 1.0 / recall)
         logging.info('**********evaluation(ev_id=%s, vali_rec_res=%s,truth=%s) of offline model(F, P, R): %s, %s, %s*********',\
                                                         self.exp_id , len(self.vali_rec_res), len(self.vali_truth), F, precision, recall)
+        return F, precision, recall
 
-if __name__ == '__main__':
+def get_best_lc_date_delta():
     dal = RECDAL()
     init_logger(log_file=LR_log_file, log_level=logging.INFO, print_console=True)
 
-    model = Model(dal, vali_output_path, test_output_path)
-    model.train()
-    model.validate()
-    logging.info('************model validation finished*******************')
-    model.predict()
+    global exp_sqls, exp_sqls_info, validation_candidate_sql, test_candidate_sql
+
+    lc_date_delta_res = []
+    filter_sql = ' where s.lc_date_delta <'
+    t_validation_candidate_sql = validation_candidate_sql + filter_sql
+    t_test_candidate_sql = test_candidate_sql + filter_sql
+    for ind in range(2, 31):
+
+        validation_candidate_sql = '%s %s' % (t_validation_candidate_sql, str(ind))
+        test_candidate_sql = '%s %s' % (t_test_candidate_sql, str(ind))
+
+        exp_sqls = [train_pos_sql, train_neg_sql, validation_candidate_sql, validation_truth_sql, test_candidate_sql]
+        exp_sqls_info = ['train_pos_sql', 'train_neg_sql', 'validation_candidate_sql', 'validation_truth_sql', 'test_candidate_sql']
+
+        model = Model(dal, vali_output_path, test_output_path)
+        model.train()
+        F, P, R = model.validate()
+        lc_date_delta_res.append((ind, F, P, R))
+        logging.info('************model validation finished*******************')
+        #model.predict()
+
+    res = sorted(lc_date_delta_res, key=lambda d: d[1], reverse=True)
+    logging.info('validation res for lc_date_delta is\n%s', '\n'.join([','.join([str(i) for i in r]) for r in res]))
+
+
+if __name__ == '__main__':
+    get_best_lc_date_delta()
 
