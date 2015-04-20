@@ -9,6 +9,7 @@
 '''
 import time
 import logging
+import random
 from datetime import datetime
 
 import numpy as np
@@ -19,6 +20,8 @@ from logging_util import init_logger
 from rec_dal import RECDAL
 from constant import LR_log_file, vali_output_path, test_output_path
 
+dal = RECDAL()
+init_logger(log_file=LR_log_file, log_level=logging.INFO, print_console=True)
 #sql for offline prediction
 train_pos_sql = '''
             select l.user_id, l.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta, l.label
@@ -37,20 +40,20 @@ train_neg_sql = '''
 #验证集的待预测候选集
 validation_candidate_sql = '''
             select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta
-            from split_20141218_stats as s'''
+            from split_20141218_stats as s where s.stores > 0 or s.carts > 0'''
 #ground truth
 validation_truth_sql = '''
            select user_id, item_id from split_20141218_labels where label = 1;
                '''
 test_candidate_sql = '''
             select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta
-            from split_20141219_stats as s'''
+            from split_20141219_stats as s where s.stores > 0 or s.carts > 0'''
 #在过去一个月的有过购买的暂时先不考虑作为预测集
 on_filter_sql = '''
             select distinct user_id, item_id from user_behaviors where behavior_type = 4;
              '''
-exp_sqls = []
-exp_sqls_info = []
+exp_sqls = [train_pos_sql, train_neg_sql, validation_candidate_sql, validation_truth_sql, test_candidate_sql]
+exp_sqls_info = ['train_pos_sql', 'train_neg_sql', 'validation_candidate_sql', 'validation_truth_sql', 'test_candidate_sql']
 
 class Model(object):
 
@@ -75,13 +78,24 @@ class Model(object):
         '''
         pos_records = self.dal.get_records_by_sql(train_pos_sql)
         neg_records = self.dal.get_records_by_sql(train_neg_sql)
-        records = pos_records + neg_records
-        logging.info('train_data: pos=%s,neg=%s',len(pos_records), len(neg_records))
+        sampled_neg_records = self.sampling_train_neg_data(pos_records, neg_records)
+        records = pos_records + sampled_neg_records
+        logging.info('train_data: pos=%s,sampled_neg=%s(orignal=%s)',len(pos_records), len(sampled_neg_records), len(neg_records))
         train_data = np.array(records, dtype=float)
         r, c = train_data.shape
         feature_indexes = range(2, c-1)
         self.train_X = train_data[:,feature_indexes]#从index为2开始为特征，到倒数第二列
         self.train_Y = train_data[:,-1]#最后一列为label
+
+    def sampling_train_neg_data(self, pos_records, neg_records):
+        '''
+            为了保证正负样本平衡，对负样本进行sample，sample的方法是使得正负样本比为1:40
+        '''
+        num_pos = len(pos_records)
+        num_neg = len(neg_records)
+        ratio = 3
+        sampled_neg_records = random.sample(neg_records, num_pos * ratio)
+        return sampled_neg_records
 
     def generate_test_data(self):
         '''
@@ -170,8 +184,6 @@ class Model(object):
         return F, precision, recall
 
 def get_best_lc_date_delta():
-    dal = RECDAL()
-    init_logger(log_file=LR_log_file, log_level=logging.INFO, print_console=True)
 
     global exp_sqls, exp_sqls_info, validation_candidate_sql, test_candidate_sql
 
@@ -197,7 +209,14 @@ def get_best_lc_date_delta():
     res = sorted(lc_date_delta_res, key=lambda d: d[1], reverse=True)
     logging.info('validation res for lc_date_delta is\n%s', '\n'.join([','.join([str(i) for i in r]) for r in res]))
 
+def train_with_sampling():
+    model = Model(dal, vali_output_path, test_output_path)
+    model.train()
+    model.validate()
+    logging.info('************model validation finished*******************')
+    model.predict()
+
 
 if __name__ == '__main__':
-    get_best_lc_date_delta()
+    train_with_sampling()
 
