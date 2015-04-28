@@ -19,9 +19,10 @@ from datetime import datetime, timedelta
 
 from constant import features_log_file, features_output_path
 from rec_dal import RECDAL
+from logging_util import init_logger
 
 
-logging.basicConfig(filename=features_log_file,level=logging.INFO, format='%(asctime)s-%(message)s')
+init_logger(log_file=features_log_file,log_level=logging.INFO, print_console=True)
 
 class FeatureGenerator(object):
 
@@ -31,8 +32,10 @@ class FeatureGenerator(object):
         self.split_date = datetime.strptime(split_date_str, "%Y-%m-%d")
         self.l3d_date = self.split_date - timedelta(days=3)
         self.l3d_date_str = datetime.strftime(self.l3d_date, "%Y-%m-%d")
+        self.yesterday = self.split_date - timedelta(days=1)
+        self.yesterday_str = datetime.strftime(self.yesterday, "%Y-%m-%d")
         self.table_name = table_name
-        logging.info('init Generator: split_date=%s, l3d_date=%s, table_name=%s', self.split_date_str, self.l3d_date_str, self.table_name)
+        logging.info('init Generator: split_date=%s, yesterday=%s, l3d_date=%s, table_name=%s', self.split_date_str, self.yesterday_str, self.l3d_date_str, self.table_name)
 
     def generate_features(self):
         '''
@@ -132,9 +135,82 @@ class FeatureGenerator(object):
 
         logging.info('%s states_data saved in %s', len(states_data), self.table_name)
 
+    def add_features(self):
+        '''
+            在现有feature基础上添加两维特征，每一个item在过去一个月和最近3天的全部点击数(looks, stores, carts, buys, total)
+        '''
+        sql = 'select item_id, total, l3d_total from %s' % self.table_name
+        records = self.dal.get_records_by_sql(sql)
+        item_totals, item_l3d_totals = {}, {}
+        for item_id, t, l3d_t in records:
+            item_totals[item_id] = item_totals.get(item_id, 0) + t
+            item_l3d_totals[item_id] = item_l3d_totals.get(item_id, 0) + l3d_t
+        add_columns_sql = 'ALTER TABLE %s ADD COLUMN item_total INTEGER NOT NULL DEFAULT 0' % self.table_name
+        self.dal.add_columns_by_sql(add_columns_sql)
+        add_columns_sql = 'ALTER TABLE %s ADD COLUMN item_l3d_total INTEGER NOT NULL DEFAULT 0;' % self.table_name
+        self.dal.add_columns_by_sql(add_columns_sql)
+        insert_sql = 'update %s set item_total = ?, item_l3d_total = ? where item_id = ?' % self.table_name
+        insert_records = []
+        for k, v in item_totals.items():
+            v1 = item_l3d_totals[k]
+            insert_records.append((v, v1, k))
+        self.dal.insert_records_by_sql(insert_sql, insert_records)
+        logging.info('add two features, item_total item_l3d_total')
+
+    def add_yesterday_features(self):
+        '''
+            划分点前一天的动作
+        '''
+        logging.info('starting add yesterday features...')
+        time1 = time.time()
+        sql = 'select user_id, item_id, behavior_type from user_behaviors where behavior_time >= "%s" and behavior_time < "%s"' % (self.yesterday_str, self.split_date_str)
+        print sql
+        records = self.dal.get_records_by_sql(sql)
+        time2 = time.time()
+        logging.info('finish dumping data from db time=%ds', time2 - time1)
+        yesterday_nums = {}#{ui:[1,2,3,4,5]}
+        item_yesterday_clicks = {} #每个item昨天的总动作数
+        for uid, item_id, bt in records:
+            item_id = str(item_id)
+            ui = str(uid) + '-' + item_id
+            yesterday_nums.setdefault(ui,[0,0,0,0,0])[bt-1] += 1
+            yesterday_nums.setdefault(ui,[0,0,0,0,0])[4] += 1#第五个位置即为总数
+            item_yesterday_clicks[item_id] = item_yesterday_clicks.get(item_id, 0) + 1
+
+        time3 = time.time()
+        logging.info('finish counting features, time=%ds', time3 - time2)
+
+        insert_records = []
+        for ui, v in yesterday_nums.items():
+            user_id, item_id = ui.split('-')
+            one_record = []
+            one_record.extend(v)
+            one_record.append(item_yesterday_clicks[item_id])
+            one_record.extend([user_id, item_id])
+            insert_records.append(one_record)
+
+        add_columns_sqls = [
+                        'ALTER TABLE %s ADD COLUMN y_looks INTEGER NOT NULL DEFAULT 0' % self.table_name,
+                        'ALTER TABLE %s ADD COLUMN y_stores INTEGER NOT NULL DEFAULT 0' % self.table_name,
+                        'ALTER TABLE %s ADD COLUMN y_carts INTEGER NOT NULL DEFAULT 0' % self.table_name,
+                        'ALTER TABLE %s ADD COLUMN y_buys INTEGER NOT NULL DEFAULT 0' % self.table_name,
+                        'ALTER TABLE %s ADD COLUMN y_total INTEGER NOT NULL DEFAULT 0' % self.table_name,
+                        'ALTER TABLE %s ADD COLUMN item_yes_total INTEGER NOT NULL DEFAULT 0' % self.table_name,
+                            ]
+        for sql in add_columns_sqls:
+            self.dal.add_columns_by_sql(sql)
+
+        insert_sql = 'update %s set y_looks = ?, y_stores = ?,y_carts = ?, y_buys = ?, y_total = ?, item_yes_total = ? where user_id = ? and item_id = ?' % self.table_name
+        self.dal.insert_records_by_sql(insert_sql, insert_records)
+        logging.info('add yesterday features, sql is %s', insert_sql)
+
+
+
+
 if __name__ == '__main__':
     dal = RECDAL()
-    split_date_str = '2014-12-17'
-    table_name = 'split_20141217_stats'
+    split_date_str = '2014-12-19'
+    table_name = 'split_20141219_stats'
     generator = FeatureGenerator(dal, split_date_str, table_name)
-    generator.generate_features()
+    #generator.generate_features()
+    generator.add_yesterday_features()

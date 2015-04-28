@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #coding=utf8
 '''
     创建数据库，并将数据导入到数据库中
@@ -104,21 +105,21 @@ CREATE_TABLE_SQLS = ['''CREATE TABLE if not exists user_behaviors(
                      ''',
                      ]
 CREATE_INDEX_SQLS = [
-                  #'CREATE INDEX uid on user_behaviors (user_id);',
-                  #'CREATE INDEX iid on user_behaviors (item_id);',
-                  #'CREATE INDEX cat on user_behaviors (item_category);',
-                  #'CREATE INDEX bti on user_behaviors (behavior_time);',
-                  #'CREATE INDEX uii on user_behaviors (user_id, item_id);',
-                  #'CREATE INDEX bt on user_behaviors (behavior_type);',
-                  #'CREATE INDEX bw on user_behaviors (behavior_weekday);',
-                  #'CREATE INDEX iid2 on items (item_id);',
-                  #'CREATE INDEX cat2 on user_behaviors (item_category);',
-                  #'CREATE INDEX uii3 on split_20141218_labels (user_id, item_id);',
-                  #'CREATE INDEX uid3 on split_20141218_labels(user_id);',
-                  #'CREATE INDEX iid3 on split_20141218_labels(item_id);',
-                  #'CREATE INDEX uii4 on split_20141218_stats (user_id, item_id);',
-                  #'CREATE INDEX uid4 on split_20141218_stats(user_id);',
-                  #'CREATE INDEX iid4 on split_20141218_stats(item_id);',
+                  'CREATE INDEX uid on user_behaviors (user_id);',
+                  'CREATE INDEX iid on user_behaviors (item_id);',
+                  'CREATE INDEX cat on user_behaviors (item_category);',
+                  'CREATE INDEX bti on user_behaviors (behavior_time);',
+                  'CREATE INDEX uii on user_behaviors (user_id, item_id);',
+                  'CREATE INDEX bt on user_behaviors (behavior_type);',
+                  'CREATE INDEX bw on user_behaviors (behavior_weekday);',
+                  'CREATE INDEX iid2 on items (item_id);',
+                  'CREATE INDEX cat2 on user_behaviors (item_category);',
+                  'CREATE INDEX uii3 on split_20141218_labels (user_id, item_id);',
+                  'CREATE INDEX uid3 on split_20141218_labels(user_id);',
+                  'CREATE INDEX iid3 on split_20141218_labels(item_id);',
+                  'CREATE INDEX uii4 on split_20141218_stats (user_id, item_id);',
+                  'CREATE INDEX uid4 on split_20141218_stats(user_id);',
+                  'CREATE INDEX iid4 on split_20141218_stats(item_id);',
                   'CREATE INDEX uii5 on split_20141219_stats (user_id, item_id);',
                   'CREATE INDEX uid5 on split_20141219_stats(user_id);',
                   'CREATE INDEX iid5 on split_20141219_stats(item_id);',
@@ -201,6 +202,7 @@ def main():
             load_items_data()
         elif type_ == 0:
             create_table()
+            add_indexes()
             load_users_data()
             load_items_data()
 

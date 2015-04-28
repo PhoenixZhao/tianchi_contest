@@ -59,6 +59,20 @@ class RECDAL(object):
         self.cursor.executemany(sql, records)
         self.conn.commit()
 
+    def insert_records_by_sql(self, sql, records):
+        '''
+            将记录插入table中
+        '''
+        self.cursor.executemany(sql, records)
+        self.conn.commit()
+
+    def add_columns_by_sql(self, sql):
+        '''
+            给某个表增加column
+        '''
+        self.cursor.execute(sql)
+        self.conn.commit()
+
     def get_records_by_sql(self, sql):
         '''
             传入sql，返回数据

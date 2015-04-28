@@ -22,7 +22,7 @@ def main():
             r_date = datetime.strptime(parts[-1], "%Y-%m-%d %H")
             parts.append(str(r_date.isoweekday()))
             wlines.append(parts)
-        wlines = sorted(wlines, key=lambda d: d[-2], reverse=True)
+        #wlines = sorted(wlines, key=lambda d: d[-2], reverse=True)
         fw = open(filename+".pre", "w+")
         fw.write('\n'.join([",".join(r) for r in wlines]))
         fw.close()

@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #coding=utf8
 '''
     给定split date，也就是预测的日期，生成训练集
@@ -44,8 +45,8 @@ def generate_train_data(split_date_str, table_name):
     save_samples(samples2, table_name)
 
 if __name__ == '__main__':
-    split_date_str = '2014-12-17'
-    table_name = 'split_20141217_labels'
+    split_date_str = '2014-12-18'
+    table_name = 'split_20141218_labels'
     generate_train_data(split_date_str, table_name)
 
 

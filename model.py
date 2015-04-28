@@ -14,6 +14,7 @@ from datetime import datetime
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn import preprocessing
 
 from logging_util import init_logger
 
@@ -24,30 +25,54 @@ dal = RECDAL()
 init_logger(log_file=LR_log_file, log_level=logging.INFO, print_console=True)
 #sql for offline prediction
 train_pos_sql = '''
-            select l.user_id, l.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta, l.label
+            select l.user_id, l.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta,
+            s.y_looks, s.y_stores, s.y_carts, s.y_buys, s.y_total, s.lc_date_delta, s.item_total, s.item_l3d_total, s.item_yes_total, l.label
+            from split_20141217_labels as l join split_20141217_stats as s
+                on l.user_id=s.user_id and l.item_id=s.item_id
+                where l.label = 1
+         '''
+train_pos_sql = '''
+            select s.user_id, s.item_id, s.buys, s.l3d_buys, s.y_buys, s.total, s.l3d_total, s.y_total, s.item_total, s.item_l3d_total, s.item_yes_total, s.lc_date_delta, l.label
             from split_20141217_labels as l join split_20141217_stats as s
                 on l.user_id=s.user_id and l.item_id=s.item_id
                 where l.label = 1
          '''
 train_neg_sql = '''
-            select l.user_id, l.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta, l.label
+            select l.user_id, l.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta,
+            s.y_looks, s.y_stores, s.y_carts, s.y_buys, s.y_total, s.lc_date_delta, s.item_total, s.item_l3d_total, s.item_yes_total, l.label
             from split_20141217_labels as l join split_20141217_stats as s
                 on l.user_id=s.user_id and l.item_id=s.item_id
                 where l.label = 0
           '''
 
+train_neg_sql = '''
+            select s.user_id, s.item_id, s.buys, s.l3d_buys, s.y_buys, s.total, s.l3d_total, s.y_total, s.item_total, s.item_l3d_total, s.item_yes_total, s.lc_date_delta, l.label
+            from split_20141217_labels as l join split_20141217_stats as s
+                on l.user_id=s.user_id and l.item_id=s.item_id
+                where l.label = 0
+         '''
 #filter_sql = ' where s.buys = 0'#初步验证这个参数不是很重要
 #验证集的待预测候选集
 validation_candidate_sql = '''
-            select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta
-            from split_20141218_stats as s where s.stores > 0 or s.carts > 0'''
+            select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta,
+            s.y_looks, s.y_stores, s.y_carts, s.y_buys, s.y_total, s.lc_date_delta, s.item_total, s.item_l3d_total, s.item_yes_total
+            from split_20141218_stats as s'''
+
+validation_candidate_sql = '''
+            select s.user_id, s.item_id, s.buys, s.l3d_buys, s.y_buys, s.total, s.l3d_total, s.y_total, s.item_total, s.item_l3d_total, s.item_yes_total, s.lc_date_delta
+            from split_20141218_stats as s'''
 #ground truth
 validation_truth_sql = '''
-           select user_id, item_id from split_20141218_labels where label = 1;
+           select s.user_id, s.item_id from split_20141218_labels as l join split_20141218_stats as s
+           on l.user_id=s.user_id and l.item_id=s.item_id where l.label = 1
                '''
 test_candidate_sql = '''
-            select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta
-            from split_20141219_stats as s where s.stores > 0 or s.carts > 0'''
+            select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta,
+            s.y_looks, s.y_stores, s.y_carts, s.y_buys, s.y_total, s.lc_date_delta, s.item_total, s.item_l3d_total, s.item_yes_total
+            from split_20141219_stats as s'''
+test_candidate_sql = '''
+            select s.user_id, s.item_id, s.buys, s.l3d_buys, s.y_buys, s.total, s.l3d_total, s.y_total, s.item_total, s.item_l3d_total, s.item_yes_total, s.lc_date_delta
+            from split_20141219_stats as s'''
 #在过去一个月的有过购买的暂时先不考虑作为预测集
 on_filter_sql = '''
             select distinct user_id, item_id from user_behaviors where behavior_type = 4;
@@ -55,18 +80,28 @@ on_filter_sql = '''
 exp_sqls = [train_pos_sql, train_neg_sql, validation_candidate_sql, validation_truth_sql, test_candidate_sql]
 exp_sqls_info = ['train_pos_sql', 'train_neg_sql', 'validation_candidate_sql', 'validation_truth_sql', 'test_candidate_sql']
 
+
+
 class Model(object):
 
-    def __init__(self, dal, vali_output_path, test_output_path):
+    def __init__(self, dal, vali_output_path, test_output_path, use_feature_scaling=False, use_preivous_model_res=False):
         self.LR = LogisticRegression()
         self.dal = dal
         self.exp_id = datetime.strftime(datetime.today(), '%Y%m%d%H%M')
         self.vali_output_path = '%s.%s' % (vali_output_path, self.exp_id)
         self.test_output_path = '%s.%s' % (test_output_path, self.exp_id)
-        logging.info('init LR model..., experiment sqls:\n%s', '\n'.join([':'.join(r) for r in zip(exp_sqls_info, exp_sqls)]))
+        self.use_feature_scaling = use_feature_scaling
+        if self.use_feature_scaling:
+            self.min_max_scaler = preprocessing.MinMaxScaler()
+        logging.info('init LR model,use_feature_scaling=%s, use_preivous_model_res=%s,  experiment sqls:\n%s', self.use_feature_scaling, use_preivous_model_res,'\n'.join([':'.join(r) for r in zip(exp_sqls_info, exp_sqls)]))
         self.generate_train_data()
-        self.generate_validation_data()
-        self.generate_test_data()
+        if use_preivous_model_res:
+            #self.generate_vali_data_by_privous_model()
+            self.generate_validation_data()
+            self.generate_test_data_by_privous_model()
+        else:
+            self.generate_validation_data()
+            self.generate_test_data()
 
     def generate_train_data(self):
         '''
@@ -85,6 +120,8 @@ class Model(object):
         r, c = train_data.shape
         feature_indexes = range(2, c-1)
         self.train_X = train_data[:,feature_indexes]#从index为2开始为特征，到倒数第二列
+        if self.use_feature_scaling:
+            self.train_X = self.min_max_scaler.fit_transform(self.train_X)
         self.train_Y = train_data[:,-1]#最后一列为label
 
     def sampling_train_neg_data(self, pos_records, neg_records):
@@ -109,6 +146,73 @@ class Model(object):
         r, c = can_predict_data.shape
         feature_indexes = range(2, c)
         self.test_X = can_predict_data[:,feature_indexes]
+        if self.use_feature_scaling:
+            self.test_X = self.min_max_scaler.fit_transform(self.test_X)
+
+    def generate_vali_data_by_privous_model(self):
+        '''
+            使用之前model里召回比较高的来作为验证集，进行验证
+            eval_id = 201504202206
+        '''
+        filename = vali_output_path + '.201504202206'
+        lines = open(filename, 'r').readlines()
+        lines = [tuple(l.strip().split(',')) for l in lines[1:]]
+        ui_ids = set(lines)
+        #user_item_ids = [(int(r[0]), int(r[1])) for r in lines]
+        sql = '''
+            select s.user_id, s.item_id, s.looks, s.stores, s.carts, s.buys, s.total, s.l3d_looks, s.l3d_stores, s.l3d_carts, l3d_buys, s.l3d_total, s.lc_date_delta,
+            s.y_looks, s.y_stores, s.y_carts, s.y_buys, s.y_total, s.lc_date_delta, s.item_total, s.item_l3d_total, s.item_yes_total
+            from split_20141218_stats as s where s.user_id in (%s)''' % ','.join([r[0] for r in lines])
+        records = self.dal.get_records_by_sql(sql)
+        can_records = []
+
+        for r in records:
+            (user_id, item_id) = (str(r[0]), str(r[1]))
+            if (user_id, item_id) in ui_ids:
+                can_records.append(r)
+        logging.info('[Validation]get %s can_records from %s records, %s records from %s', len(can_records), len(records), len(lines), filename)
+
+        can_predict_data = np.array(can_records, dtype=float)
+        self.vali_data_ind = can_predict_data[:,(0,1)]#user_item 的pair
+        r, c = can_predict_data.shape
+        feature_indexes = range(2, c)
+        self.vali_X = can_predict_data[:,feature_indexes]
+        if self.use_feature_scaling:
+            self.vali_X = self.min_max_scaler.fit_transform(self.vali_X)
+
+
+        self.vali_truth= self.dal.get_records_by_sql(validation_truth_sql)
+        logging.info('candidate_validation_records=%s, validation_truth=%s', len(can_records), len(self.vali_truth))
+
+    def generate_test_data_by_privous_model(self):
+        '''
+            使用之前model里召回比较高的来作为测试集，进行预测
+            eval_id = 201504202206
+        '''
+        filename = test_output_path + '.201504242347'
+        lines = open(filename, 'r').readlines()
+        lines = [tuple(l.strip().split(',')) for l in lines[1:]]
+        ui_ids = set(lines)
+        #user_item_ids = [(int(r[0]), int(r[1])) for r in lines]
+        sql = '''
+            select s.user_id, s.item_id, s.buys, s.l3d_buys, s.y_buys, s.total, s.l3d_total, s.y_total, s.item_total, s.item_l3d_total, s.item_yes_total, s.lc_date_delta
+            from split_20141219_stats as s where s.user_id in (%s)''' % ','.join([r[0] for r in lines])
+        records = self.dal.get_records_by_sql(sql)
+        can_records = []
+
+        for r in records:
+            (user_id, item_id) = (str(r[0]), str(r[1]))
+            if (user_id, item_id) in ui_ids:
+                can_records.append(r)
+        logging.info('[TEST]get %s can_records from %s records, %s records from %s', len(can_records), len(records), len(lines), filename)
+
+        can_predict_data = np.array(can_records, dtype=float)
+        self.test_data_ind = can_predict_data[:,(0,1)]#user_item 的pair
+        r, c = can_predict_data.shape
+        feature_indexes = range(2, c)
+        self.test_X = can_predict_data[:,feature_indexes]
+        if self.use_feature_scaling:
+            self.test_X = self.min_max_scaler.fit_transform(self.test_X)
 
     def generate_validation_data(self):
         '''
@@ -120,6 +224,8 @@ class Model(object):
         r, c = can_predict_data.shape
         feature_indexes = range(2, c)
         self.vali_X = can_predict_data[:,feature_indexes]
+        if self.use_feature_scaling:
+            self.vali_X = self.min_max_scaler.fit_transform(self.vali_X)
 
         self.vali_truth= self.dal.get_records_by_sql(validation_truth_sql)
         logging.info('candidate_validation_records=%s, validation_truth=%s', len(can_records), len(self.vali_truth))
@@ -134,7 +240,8 @@ class Model(object):
         self.vali_proba = self.vali_proba.reshape(r[0], 1)
         vali_res = np.hstack((self.vali_data_ind, self.vali_proba))
         #只需要筛选出res中最后一列为1的即为预测的结果
-        self.th_prob = 0.5
+        self.th_prob = 0.55
+        self.th_prob2 = 0.9
         rec_res = vali_res[vali_res[:,2] > self.th_prob]
         self.vali_rec_res = [(int(uid), int(item_id)) for uid, item_id, _ in rec_res]
         logging.info('[Validation]filter by prob=%s, get %s predicted buying items', self.th_prob, len(self.vali_rec_res))
@@ -210,7 +317,7 @@ def get_best_lc_date_delta():
     logging.info('validation res for lc_date_delta is\n%s', '\n'.join([','.join([str(i) for i in r]) for r in res]))
 
 def train_with_sampling():
-    model = Model(dal, vali_output_path, test_output_path)
+    model = Model(dal, vali_output_path, test_output_path, use_feature_scaling=False, use_preivous_model_res=True)
     model.train()
     model.validate()
     logging.info('************model validation finished*******************')

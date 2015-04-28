@@ -3,12 +3,12 @@
     维护一些常用变量，如文件路径等
 '''
 
-database_name = '../data/tianchi.db'
+database_name = '../data/tianchi420.db'
 sample_data_path = '../data/sample_data/'
 
-raw_data_path = '../data/tianchi_mobile_recommend_train_user.csv'
-pre_users_his_path = '../data/tianchi_mobile_recommend_train_user.csv.pre'
-items_info_path = '../data/tianchi_mobile_recommend_train_item.csv'
+raw_data_path = '../data/tianchi_mobile_recommend_train_user_420.csv'
+pre_users_his_path = '../data/tianchi_mobile_recommend_train_user_420.csv.pre'
+items_info_path = '../data/tianchi_mobile_recommend_train_item_420.csv'
 
 submission_dir = '../data/submission_res/'
 test_dir = '../data/test_data/'
